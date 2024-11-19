@@ -3,12 +3,8 @@ from bs4 import BeautifulSoup
 import random
 
 
-def scrape_books(queue):
+def scrape_books(queue,chosenCategoty):
     #https://books.toscrape.com/index.html
-
-    booksCategorys = ['travel_2','mystery_3','historical-fiction_4','sequential-art_5']
-
-    chosenCategoty = booksCategorys[random.randint(0, 4)]
 
     r = requests.get('https://books.toscrape.com/catalogue/category/books/'+chosenCategoty+'/index.html')
     print(r) #HTTP status code
@@ -21,12 +17,23 @@ def scrape_books(queue):
     book_list = []
 
     if s is not None:
-        content = s.find_all('h3')
-        book_list.append(len(content))
-        for paragraph in content:
-            book_list.append('<h2>' + paragraph.get_text(strip=True) + '</h2></br>')  # strip=True elimina espacios en blanco extra
+        titles = s.find_all('h3')
+        book_list.append(len(titles))
+
+        prices = s.find_all('p', class_='price_color')
+        stocks = s.find_all('p', class_='availability')
+
+        for book in range(len(titles)):
+            book_list.append('<h2>' + titles[book].get_text(strip=True) + '</h2>' +
+                             '<b>' + prices[book].get_text(strip=True) + '</b>' +
+                             '<p style="color:green">' + stocks[book].get_text(strip=True) + '</p><p></p>')
+            
+        book_list.append(None)
+
     else:
         print("No se encontró el contenido deseado.")
+
+
 
     for book in book_list:
         queue.put(book)

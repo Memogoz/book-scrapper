@@ -1,6 +1,5 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QVBoxLayout, QMainWindow, QLabel, QPushButton, QLineEdit, QProgressBar, QTextEdit
-from PyQt5.QtGui import QPalette, QColor
 from PyQt5.QtCore import QThread, pyqtSignal
 
 import multiprocessing
@@ -11,26 +10,20 @@ from scrapper import scrape_books
 
 class WorkerThread(QThread):
 
+    def __init__(self, category):
+        super().__init__()
+        self.category = category
 
     # Señal para enviar el progreso actualizado a la GUI
     update_progress = pyqtSignal(int)
     update_text = pyqtSignal(str)
     
     def run(self):
-        '''
-        sampleText = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras congue mattis lorem, sed tincidunt nunc pharetra et. Curabitur non laoreet ante. Integer at tempus magna. Nunc vel fringilla nisi. Sed ut lacinia velit. Sed massa tortor, condimentum in tempus sit amet, elementum sit amet dolor. Nullam ac purus egestas, gravida quam vel, fermentum velit. Morbi nisl libero, dapibus a sem quis, molestie varius lacus. Nam egestas dapibus urna ac aliquam. Sed faucibus vulputate dolor, ac eleifend urna ultrices eget. Vivamus in dolor ut mi feugiat finibus vitae vitae urna. Aliquam sapien velit, dignissim non eros id, finibus egestas purus. Sed. a v f r d a ae'
-        textList = sampleText.split()
-
-        # Simulamos una tarea de larga duración
-        for i in range(101):  # De 0 a 100 para el progreso de la barra
-            time.sleep(0.1*random.randint(1, 3))  # Simula que está trabajando
-            # Emite una señal con el valor de progreso para actualizar la GUI
-            self.update_progress.emit(i)
-            self.update_text.emit(textList[i])  # Envía una porción del texto
-        '''
+        
+        
 
         q = multiprocessing.Queue()
-        p = multiprocessing.Process(target=scrape_books,args=(q,))
+        p = multiprocessing.Process(target=scrape_books,args=(q,self.category))
         p.start()
 
         rsp = ''
@@ -64,7 +57,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
 
-        self.setWindowTitle("Shopping Web Scrapper")
+        self.setWindowTitle("Book Web Scrapper")
 
         self.layout = QVBoxLayout()
 
@@ -77,21 +70,21 @@ class MainWindow(QMainWindow):
         self.layout3 = QVBoxLayout()
 
         # Top Layout
-        self.layoutTop.addWidget(QLabel('Scrapper           '))
-        self.layoutTop.addWidget(QLabel('Producto : '))
-        self.inputLine = QLineEdit()
-        self.layoutTop.addWidget(self.inputLine)
-        self.button = QPushButton('Buscar')
+        self.layoutTop.addWidget(QLabel('Book Scrapper           '))
+        self.button = QPushButton('Search')
         self.button.clicked.connect(self.start_task)
         self.layoutTop.addWidget(self.button)
-
-        self.layoutShops.addWidget(QLabel('Amazon'))
+        
+        self.LabelA = QLabel('A')
+        self.layoutShops.addWidget(self.LabelA)
         self.progressBarAmazon = QProgressBar()
         self.layoutShops.addWidget(self.progressBarAmazon)
-        self.layoutShops.addWidget(QLabel('              Aliexpress'))
+        self.LabelB = QLabel('              B')
+        self.layoutShops.addWidget(self.LabelB)
         self.progressBarAliexpress = QProgressBar()
         self.layoutShops.addWidget(self.progressBarAliexpress)
-        self.layoutShops.addWidget(QLabel('        Mercado Libre'))
+        self.LabelC = QLabel('        C')
+        self.layoutShops.addWidget(self.LabelC)
         self.progressBarMercado = QProgressBar()
         self.layoutShops.addWidget(self.progressBarMercado)
 
@@ -124,19 +117,28 @@ class MainWindow(QMainWindow):
     def start_task(self):
         self.button.setEnabled(False)
 
-        self.thread1 = WorkerThread()
+        booksCategorys = ['travel_2','mystery_3','historical-fiction_4','sequential-art_5','classics_6','philosophy_7','romance_8','womens-fiction_9','fiction_10','childrens_11','religion_12','nonfiction_13','music_14','default_15','science-fiction_16','sports-and-games_17','add-a-comment_18','fantasy_19','new-adult_20','young-adult_21','science_22','poetry_23','paranormal_24','art_25','psychology_26']
+        chosenCategory1 = booksCategorys[random.randint(0, 24)]
+        chosenCategory2 = booksCategorys[random.randint(0, 24)]
+        chosenCategory3 = booksCategorys[random.randint(0, 24)]
+
+        self.update_title_A(chosenCategory1)
+        self.update_title_B(chosenCategory2)
+        self.update_title_C(chosenCategory3)
+
+        self.thread1 = WorkerThread(chosenCategory1)
         # Conectar las señales a métodos separados
         self.thread1.update_progress.connect(self.update_progress_amazon)
         self.thread1.update_text.connect(self.update_box_amazon)
         # Reactivar el botón cuando el hilo finalice
         self.thread1.finished.connect(lambda: self.button.setEnabled(True))
 
-        self.thread2 = WorkerThread()
+        self.thread2 = WorkerThread(chosenCategory2)
         # Conectar las señales a métodos separados
         self.thread2.update_progress.connect(self.update_progress_aliexpress)
         self.thread2.update_text.connect(self.update_box_aliexpress)
 
-        self.thread3 = WorkerThread()
+        self.thread3 = WorkerThread(chosenCategory3)
         # Conectar las señales a métodos separados
         self.thread3.update_progress.connect(self.update_progress_mercado)
         self.thread3.update_text.connect(self.update_box_mercado)
@@ -155,17 +157,26 @@ class MainWindow(QMainWindow):
     def update_box_amazon(self, message):
         self.productsBoxAmazon.append(message)
 
+    def update_title_A(self, title):
+        self.LabelA.setText(title)
+
     def update_progress_aliexpress(self, value):
         self.progressBarAliexpress.setValue(value)
     
     def update_box_aliexpress(self, message):
         self.productsBoxAliexpress.append(message)
 
+    def update_title_B(self, title):
+        self.LabelB.setText(title)
+
     def update_progress_mercado(self, value):
         self.progressBarMercado.setValue(value)
     
     def update_box_mercado(self, message):
         self.productsBoxMercado.append(message)
+
+    def update_title_C(self, title):
+        self.LabelC.setText(title)
 
 
 
